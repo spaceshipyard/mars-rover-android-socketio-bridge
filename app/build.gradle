@@ -4,7 +4,7 @@ android {
     compileSdkVersion 25
     buildToolsVersion "26.0.0"
     defaultConfig {
-        applicationId "com.chaoslabgames.mars.bridge.remote"
+        applicationId "com.chaoslabgames.mars.bridge.remote.socketio"
         minSdkVersion 14
         targetSdkVersion 25
         versionCode 1

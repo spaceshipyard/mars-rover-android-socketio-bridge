@@ -1,3 +1,3 @@
 <resources>
-    <string name="app_name">Mars-rover-android-remote-bridge</string>
+    <string name="app_name">Mars-rover-android-socketio-bridge</string>
 </resources>
