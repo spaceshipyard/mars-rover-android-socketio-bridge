@@ -8,6 +8,8 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
 
 
@@ -23,14 +25,17 @@ import io.socket.client.IO;
 import io.socket.client.Socket;
 import io.socket.emitter.Emitter;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
     BluetoothSocket clientSocket;
 
-    final String BT_MAC = "98:D3:31:FC:43:A1";
+    //final String BT_MAC = "98:D3:31:FC:43:A1";
     final String DISPATCHER_URL = "http://micro-conf.xyz";
 
     EditText logText;
+    EditText editTextMacAddr;
+    Button connectBtn;
+    Button cancelBtn;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,25 +43,55 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         logText = (EditText) findViewById(R.id.logText);
+        editTextMacAddr = (EditText) findViewById(R.id.editTextMacAddr);
 
+        connectBtn = (Button) findViewById(R.id.btnConnect);
+        cancelBtn = (Button) findViewById(R.id.btnDisconnect);
+
+    }
+
+    private void printMessageOnScreen(final String msg) {
+        this.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                logText.append(msg + "\n");
+            }
+        });
+    }
+
+    private void forwardCmd(String cmd) {
+        try {
+            OutputStream outStream = clientSocket.getOutputStream();
+            outStream.write(cmd.getBytes());
+
+        } catch (IOException e) {
+            //Если есть ошибки, выводим их в лог
+            Log.d("BLUETOOTH", e.getMessage());
+            printMessageOnScreen("Error to send over BT cmd: " + cmd);
+        }
+
+    }
+
+    private void initiateConnections() {
         //BT
         String enableBT = BluetoothAdapter.ACTION_REQUEST_ENABLE;
         startActivityForResult(new Intent(enableBT), 0);
 
         BluetoothAdapter bluetooth = BluetoothAdapter.getDefaultAdapter();
 
+        final String mac = editTextMacAddr.getText().toString();
         try {
-            BluetoothDevice device = bluetooth.getRemoteDevice(BT_MAC);
+            BluetoothDevice device = bluetooth.getRemoteDevice(mac);
 
             Method m = device.getClass().getMethod(
                     "createRfcommSocket", new Class[]{int.class});
 
             clientSocket = (BluetoothSocket) m.invoke(device, 1);
             clientSocket.connect();
-            printMessageOnScreen("CONNECTED to BT");
+            printMessageOnScreen("CONNECTED to BT " + mac);
         } catch (Exception e) {
             Log.d("BLUETOOTH", e.getMessage());
-            printMessageOnScreen("BLUETOOTH connection error " + e);
+            printMessageOnScreen("BLUETOOTH connection error " + e + " " + mac);
         }
 
         //end BT
@@ -118,27 +153,15 @@ public class MainActivity extends AppCompatActivity {
         } catch (URISyntaxException e) {
             e.printStackTrace();
         }
+
     }
 
-    private void printMessageOnScreen(final String msg) {
-        this.runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                logText.append(msg + "\n");
-            }
-        });
-    }
+    @Override
+    public void onClick(View v) {
+        Log.d("onClick", v.toString());
 
-    private void forwardCmd(String cmd) {
-        try {
-            OutputStream outStream = clientSocket.getOutputStream();
-            outStream.write(cmd.getBytes());
-
-        } catch (IOException e) {
-            //Если есть ошибки, выводим их в лог
-            Log.d("BLUETOOTH", e.getMessage());
-            printMessageOnScreen("Error to send over BT cmd: " + cmd);
+        if (v == connectBtn) {
+            initiateConnections();
         }
-
     }
 }
