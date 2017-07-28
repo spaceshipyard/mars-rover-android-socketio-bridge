@@ -20,7 +20,7 @@
             android:layout_weight="0.39"
             android:ems="10"
             android:inputType="textLongMessage"
-            android:text="84:BE:52:08:47:A5" />
+            android:text="98:D3:31:FC:43:A1" />
 
         <LinearLayout
             android:layout_width="match_parent"
