@@ -1,6 +1,5 @@
 package com.chaoslabgames.mars.bridge.remote.socketio;
 
-import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
@@ -30,12 +29,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     BluetoothSocket clientSocket;
 
     //final String BT_MAC = "98:D3:31:FC:43:A1";
-    final String DISPATCHER_URL = "http://micro-conf.xyz";
+//    final String DISPATCHER_URL = "http://micro-conf.xyz";
 
     EditText logText;
     EditText editTextMacAddr;
+    EditText editTextDispatcherUrl;
     Button connectBtn;
-    Button cancelBtn;
+    Button disconnectBtn;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,9 +44,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         logText = (EditText) findViewById(R.id.logText);
         editTextMacAddr = (EditText) findViewById(R.id.editTextMacAddr);
+        editTextDispatcherUrl = (EditText) findViewById(R.id.editTextDispatcherUrl);
 
         connectBtn = (Button) findViewById(R.id.btnConnect);
-        cancelBtn = (Button) findViewById(R.id.btnDisconnect);
+        disconnectBtn = (Button) findViewById(R.id.btnDisconnect);
 
     }
 
@@ -79,25 +80,26 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         BluetoothAdapter bluetooth = BluetoothAdapter.getDefaultAdapter();
 
-        final String mac = editTextMacAddr.getText().toString();
+        final String btMac = editTextMacAddr.getText().toString();
+        final String dispatcherUrl = editTextDispatcherUrl.getText().toString();
         try {
-            BluetoothDevice device = bluetooth.getRemoteDevice(mac);
+            BluetoothDevice device = bluetooth.getRemoteDevice(btMac);
 
             Method m = device.getClass().getMethod(
                     "createRfcommSocket", new Class[]{int.class});
 
             clientSocket = (BluetoothSocket) m.invoke(device, 1);
             clientSocket.connect();
-            printMessageOnScreen("CONNECTED to BT " + mac);
+            printMessageOnScreen("CONNECTED to BT " + btMac);
         } catch (Exception e) {
             Log.d("BLUETOOTH", e.getMessage());
-            printMessageOnScreen("BLUETOOTH connection error " + e + " " + mac);
+            printMessageOnScreen("BLUETOOTH connection error " + e + " " + btMac);
         }
 
         //end BT
 
         try {
-            final Socket socket = IO.socket(DISPATCHER_URL);
+            final Socket socket = IO.socket(dispatcherUrl);
 
             socket.on(Socket.EVENT_CONNECT, new Emitter.Listener() {
 
@@ -161,7 +163,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         Log.d("onClick", v.toString());
 
         if (v == connectBtn) {
-            initiateConnections();
+            //initiateConnections();
+            Intent intent = new Intent(this, ArduinoBridgeService.class);
+            final String btMac = editTextMacAddr.getText().toString();
+            final String dispatcherUrl = editTextDispatcherUrl.getText().toString();
+            intent.putExtra("btMacAddress", btMac);
+            intent.putExtra("dispatcherUrl", dispatcherUrl);
+            startService(intent);
+        } else if (v == disconnectBtn) {
+            Intent intent = new Intent(this, ArduinoBridgeService.class);
+            stopService(intent);
         }
     }
 }
