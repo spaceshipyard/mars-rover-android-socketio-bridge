@@ -163,7 +163,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         Log.d("onClick", v.toString());
 
         if (v == connectBtn) {
-            //initiateConnections();
             Intent intent = new Intent(this, ArduinoBridgeService.class);
             final String btMac = editTextMacAddr.getText().toString();
             final String dispatcherUrl = editTextDispatcherUrl.getText().toString();

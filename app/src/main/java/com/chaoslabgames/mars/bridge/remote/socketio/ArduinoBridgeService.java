@@ -8,6 +8,7 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
@@ -127,13 +128,12 @@ public class ArduinoBridgeService extends Service {
                         Log.d("message", obj.toString());
                         try {
                             final String cmd = obj.get("cmd").toString();
-                            forwardCmd(cmd);
+                            processCmd(cmd, obj.getJSONObject("parameters"));
                             printMessageOnScreen("in-cmd: " + cmd);
                         } catch (JSONException e) {
                             e.printStackTrace();
                             Log.d("socket", "fail to get cmd", e);
                         }
-
                     }
 
                 }).on(Socket.EVENT_DISCONNECT, new Emitter.Listener() {
@@ -171,7 +171,31 @@ public class ArduinoBridgeService extends Service {
             mNotificationManager.notify(NOTIF_ID, buildStatusNotification());
         }
 
-        private void forwardCmd(String cmd) {
+        private void processCmd(String cmd, JSONObject parameters) {
+            if ("makeCall".equals(cmd)) {
+                final String participants;
+                try {
+                    participants = parameters.getString("participants");
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                    Log.e("socket", "cant get participants", e);
+                    return;
+                }
+                final boolean video = parameters.optBoolean("video", false);
+                makeCall(participants, video);
+            } else {
+                forwardToBT(cmd);
+            }
+        }
+
+        private void makeCall(String participants, boolean video) {
+            Intent skype = new Intent("android.intent.action.VIEW");
+            skype.setData(Uri.parse("skype:" + participants + "?call" + (video ? "&video" : "")));
+            skype.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(skype);
+        }
+
+        private void forwardToBT(String cmd) {
             try {
                 OutputStream outStream = clientSocket.getOutputStream();
                 outStream.write(cmd.getBytes());
