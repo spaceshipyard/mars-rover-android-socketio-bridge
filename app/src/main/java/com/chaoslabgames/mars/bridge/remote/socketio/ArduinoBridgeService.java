@@ -225,7 +225,7 @@ public class ArduinoBridgeService extends Service {
         private void makeCall(String participants, boolean video) {
             Intent skype = new Intent("android.intent.action.VIEW");
             skype.setData(Uri.parse("skype:" + participants + "?call" + (video ? "&video" : "")));
-            skype.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            skype.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
             startActivity(skype);
         }
 
