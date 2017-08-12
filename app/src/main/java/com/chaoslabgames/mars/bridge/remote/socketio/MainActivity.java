@@ -34,6 +34,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     EditText logText;
     EditText editTextMacAddr;
     EditText editTextDispatcherUrl;
+    EditText editTextRoomName;
     Button connectBtn;
     Button disconnectBtn;
 
@@ -43,6 +44,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         setContentView(R.layout.activity_main);
 
         logText = (EditText) findViewById(R.id.logText);
+        editTextRoomName = (EditText) findViewById(R.id.editTextRoomName);
         editTextMacAddr = (EditText) findViewById(R.id.editTextMacAddr);
         editTextDispatcherUrl = (EditText) findViewById(R.id.editTextDispatcherUrl);
 
@@ -166,8 +168,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             Intent intent = new Intent(this, ArduinoBridgeService.class);
             final String btMac = editTextMacAddr.getText().toString();
             final String dispatcherUrl = editTextDispatcherUrl.getText().toString();
+            final String roomName = editTextRoomName.getText().toString();
             intent.putExtra("btMacAddress", btMac);
             intent.putExtra("dispatcherUrl", dispatcherUrl);
+            intent.putExtra("roomName", roomName);
             startService(intent);
         } else if (v == disconnectBtn) {
             Intent intent = new Intent(this, ArduinoBridgeService.class);

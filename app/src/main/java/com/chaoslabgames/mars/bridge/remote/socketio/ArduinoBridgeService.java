@@ -48,19 +48,22 @@ public class ArduinoBridgeService extends Service {
         BluetoothSocket clientSocket;
         volatile boolean isBtAlive = false;
         volatile boolean isSocketAlive = false;
+        volatile String currentRoom;
 
         public ServiceHandler(Looper looper) {
             super(looper);
         }
+
         @Override
         public void handleMessage(Message msg) {
 
             final String btMac = msg.getData().getString("btMacAddress");
             final String dispatcherUrl = msg.getData().getString("dispatcherUrl");
+            final String roomName = msg.getData().getString("roomName");
 
             startForeground(NOTIF_ID, buildStatusNotification());
 
-            initiateConnections(btMac, dispatcherUrl);
+            initiateConnections(btMac, dispatcherUrl, roomName);
             // Stop the service using the startId, so that we don't stop
             // the service in the middle of handling another job
             //stopSelf(msg.arg1);
@@ -72,10 +75,10 @@ public class ArduinoBridgeService extends Service {
                     .setContentTitle("Service")
                     .setContentText(
                             " bluetooth: " + isBtAlive +
-                            " dispatcher: " + isSocketAlive).build();
+                                    " dispatcher: " + isSocketAlive + " room: " + currentRoom).build();
         }
 
-        private void initiateConnections(String btMac, String dispatcherUrl) {
+        private void initiateConnections(String btMac, String dispatcherUrl, final String roomName) {
             Toast.makeText(getApplicationContext(), "Bluetooth Service Started", Toast.LENGTH_LONG).show();
 
             BluetoothAdapter.getDefaultAdapter().enable();
@@ -106,21 +109,52 @@ public class ArduinoBridgeService extends Service {
 
                     @Override
                     public void call(Object... args) {
-                        printMessageOnScreen("socket io connected");
-                        isSocketAlive = true;
-                        updateStatus();
-                    }
+                            printMessageOnScreen("socket io connected");
+                            isSocketAlive = true;
+                            updateStatus();
+                        }
+                })
+                .on("welcome", new Emitter.Listener() {
+                        @Override
+                        public void call(Object... args) {
+                            try {
+                                JSONObject obj = (JSONObject) args[0];
+                                currentRoom = obj.getJSONArray("currRooms").toString();
 
-                }).on("event", new Emitter.Listener() {
+                                printMessageOnScreen("welcome message is received");
+                                socket.emit("join", new JSONObject("{ roomName:\"" + roomName + "\" }"));
+                                updateStatus();
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                                Log.e("socket", e.getMessage(), e);
+                            }
+                        }
+                })
+                .on("join", new Emitter.Listener() {
 
                     @Override
                     public void call(Object... args) {
-                        JSONObject obj = (JSONObject) args[0];
-                        Log.d("event", obj.toString());
-                        printMessageOnScreen("event " + obj.toString());
+                        final JSONObject obj = (JSONObject) args[0];
+                        try {
+                            final String roomName;
+                            roomName = obj.getString("roomName");
+                            currentRoom = roomName;
+                            updateStatus();
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                            Log.e("socket", "join is failed " + e.getMessage(), e);
+                        }
                     }
+                })
+                .on("event", new Emitter.Listener() {
+                            @Override
+                            public void call(Object... args) {
+                                JSONObject obj = (JSONObject) args[0];
+                                Log.d("event", obj.toString());
+                                printMessageOnScreen("event " + obj.toString());
+                            }
 
-                }).on("message", new Emitter.Listener() {
+                        }).on("message", new Emitter.Listener() {
 
                     @Override
                     public void call(Object... args) {
@@ -204,6 +238,7 @@ public class ArduinoBridgeService extends Service {
                 //Если есть ошибки, выводим их в лог
                 isBtAlive = false;
                 updateStatus();
+                e.printStackTrace();
                 Log.d("BLUETOOTH", e.getMessage());
                 printMessageOnScreen("Error to send over BT cmd: " + cmd);
             }
@@ -214,7 +249,6 @@ public class ArduinoBridgeService extends Service {
             //Toast.makeText(getApplicationContext(), text, Toast.LENGTH_SHORT).show();
         }
     }
-
 
 
     @Override
@@ -241,6 +275,7 @@ public class ArduinoBridgeService extends Service {
         // start ID so we know which request we're stopping when we finish the job
         Message msg = mServiceHandler.obtainMessage();
         msg.arg1 = startId;
+        msg.getData().putString("roomName", intent.getExtras().getString("roomName"));
         msg.getData().putString("btMacAddress", intent.getExtras().getString("btMacAddress"));
         msg.getData().putString("dispatcherUrl", intent.getExtras().getString("dispatcherUrl"));
         mServiceHandler.sendMessage(msg);
