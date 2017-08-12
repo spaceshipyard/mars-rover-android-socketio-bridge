@@ -31,7 +31,7 @@
             android:ems="10"
             android:hint="dispatcher url"
             android:inputType="textLongMessage"
-            android:text="http://192.168.1.100:8081/" />
+            android:text="http://micro-conf.xyz/" />
 
         <EditText
             android:id="@+id/editTextMacAddr"
