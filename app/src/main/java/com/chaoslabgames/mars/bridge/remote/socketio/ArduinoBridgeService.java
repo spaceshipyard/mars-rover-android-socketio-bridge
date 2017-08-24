@@ -37,18 +37,20 @@ import io.socket.emitter.Emitter;
 
 public class ArduinoBridgeService extends Service {
 
+    private static final int MSG_INIT = 2;
+    private static final int MSG_DESTROY = 3;
     final int NOTIF_ID = 1;
 
     private Looper mServiceLooper;
     private ServiceHandler mServiceHandler;
 
+
     // Handler that receives messages from the thread
     private final class ServiceHandler extends Handler {
 
-        BluetoothSocket clientSocket;
-        volatile boolean isBtAlive = false;
         volatile boolean isSocketAlive = false;
         volatile String currentRoom;
+        private BluetoothCommunicator btCommunicator;
 
         public ServiceHandler(Looper looper) {
             super(looper);
@@ -57,13 +59,20 @@ public class ArduinoBridgeService extends Service {
         @Override
         public void handleMessage(Message msg) {
 
-            final String btMac = msg.getData().getString("btMacAddress");
-            final String dispatcherUrl = msg.getData().getString("dispatcherUrl");
-            final String roomName = msg.getData().getString("roomName");
+            if (msg.arg1 == MSG_INIT) {
+                final String btMac = msg.getData().getString("btMacAddress");
+                final String dispatcherUrl = msg.getData().getString("dispatcherUrl");
+                final String roomName = msg.getData().getString("roomName");
 
-            startForeground(NOTIF_ID, buildStatusNotification());
+                btCommunicator = new BluetoothCommunicator();
+                startForeground(NOTIF_ID, buildStatusNotification());
 
-            initiateConnections(btMac, dispatcherUrl, roomName);
+                initiateConnections(btMac, dispatcherUrl, roomName);
+            } else if (msg.arg1 == MSG_DESTROY) {
+                btCommunicator.disconnect();
+            } else {
+                throw new IllegalStateException("Unknow msg type " + msg.arg1);
+            }
             // Stop the service using the startId, so that we don't stop
             // the service in the middle of handling another job
             //stopSelf(msg.arg1);
@@ -74,31 +83,14 @@ public class ArduinoBridgeService extends Service {
                     .setSmallIcon(android.R.drawable.stat_notify_sync)
                     .setContentTitle("Service")
                     .setContentText(
-                            " bluetooth: " + isBtAlive +
+                            " bluetooth: " + btCommunicator.isConnected() +
                                     " dispatcher: " + isSocketAlive + " room: " + currentRoom).build();
         }
 
         private void initiateConnections(String btMac, String dispatcherUrl, final String roomName) {
             Toast.makeText(getApplicationContext(), "Bluetooth Service Started", Toast.LENGTH_LONG).show();
 
-            BluetoothAdapter.getDefaultAdapter().enable();
-            BluetoothAdapter bluetooth = BluetoothAdapter.getDefaultAdapter();
-
-            try {
-                BluetoothDevice device = bluetooth.getRemoteDevice(btMac);
-
-                Method m = device.getClass().getMethod(
-                        "createRfcommSocket", new Class[]{int.class});
-
-                clientSocket = (BluetoothSocket) m.invoke(device, 1);
-                clientSocket.connect();
-                printMessageOnScreen("CONNECTED to BT " + btMac);
-                isBtAlive = true;
-            } catch (Exception e) {
-                Log.d("BLUETOOTH", e.getMessage());
-                printMessageOnScreen("BLUETOOTH connection error " + e + " " + btMac);
-                isBtAlive = false;
-            }
+            btCommunicator.connect(btMac);
             updateStatus();
             //end BT
 
@@ -230,18 +222,9 @@ public class ArduinoBridgeService extends Service {
         }
 
         private void forwardToBT(String cmd) {
-            try {
-                OutputStream outStream = clientSocket.getOutputStream();
-                outStream.write(cmd.getBytes());
-
-            } catch (IOException e) {
-                //Если есть ошибки, выводим их в лог
-                isBtAlive = false;
-                updateStatus();
-                e.printStackTrace();
-                Log.d("BLUETOOTH", e.getMessage());
-                printMessageOnScreen("Error to send over BT cmd: " + cmd);
-            }
+            Log.d("message", "forward " + cmd);
+            btCommunicator.forwardToBT(cmd);
+            updateStatus();
         }
 
         void printMessageOnScreen(String text) {
@@ -270,11 +253,11 @@ public class ArduinoBridgeService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Toast.makeText(this, "service starting", Toast.LENGTH_SHORT).show();
-
         // For each start request, send a message to start a job and deliver the
         // start ID so we know which request we're stopping when we finish the job
         Message msg = mServiceHandler.obtainMessage();
-        msg.arg1 = startId;
+        msg.arg1 = MSG_INIT;
+        msg.arg2 = startId;
         msg.getData().putString("roomName", intent.getExtras().getString("roomName"));
         msg.getData().putString("btMacAddress", intent.getExtras().getString("btMacAddress"));
         msg.getData().putString("dispatcherUrl", intent.getExtras().getString("dispatcherUrl"));
@@ -293,5 +276,10 @@ public class ArduinoBridgeService extends Service {
     @Override
     public void onDestroy() {
         Toast.makeText(this, "service done", Toast.LENGTH_SHORT).show();
+        Message msg = mServiceHandler.obtainMessage();
+        msg.arg1 = MSG_DESTROY;
+
     }
+
+
 }
