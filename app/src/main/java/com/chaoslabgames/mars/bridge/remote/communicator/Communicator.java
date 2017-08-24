@@ -1,5 +1,6 @@
 package com.chaoslabgames.mars.bridge.remote.communicator;
 
+import com.chaoslabgames.mars.bridge.remote.communicator.exceptions.BadReplyIdException;
 import com.chaoslabgames.mars.bridge.remote.communicator.exceptions.CommunicationException;
 
 /**
@@ -7,23 +8,26 @@ import com.chaoslabgames.mars.bridge.remote.communicator.exceptions.Communicatio
  */
 
 public class Communicator {
-    RoboMessageSender sender;
-    RoboReplyReader reader;
+    private final MessageIdGenerator messageIdGenerator;
+    private final RoboMessageSender sender;
+    private final RoboReplyReader reader;
 
-    public Communicator(RoboMessageSender sender, RoboReplyReader reader) {
+    public Communicator(MessageIdGenerator messageIdGenerator, RoboMessageSender sender, RoboReplyReader reader) {
         this.sender = sender;
         this.reader = reader;
+        this.messageIdGenerator = messageIdGenerator;
     }
 
     public Object send(Object msg) throws CommunicationException {
         final RoboMessage roboMessage = new RoboMessage();
-        final String requestId = "id";
+        final String requestId = this.messageIdGenerator.next();
         roboMessage.requestId = requestId;
+        roboMessage.body = msg;
+
         this.sender.send(roboMessage);
         final RoboReply reply = reader.readReply();
-        if (reply.requestId.equals(requestId)) {
-            throw
-
+        if (!requestId.equals(reply.requestId)) {
+            throw new BadReplyIdException();
         }
 
         return reply.body;
