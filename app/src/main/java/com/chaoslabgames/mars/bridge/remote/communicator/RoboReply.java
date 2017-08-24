@@ -5,11 +5,11 @@ package com.chaoslabgames.mars.bridge.remote.communicator;
  */
 
 public class RoboReply {
-    RoboReplyStatus status;
-    String requestId;
-    Object body;
+    public String requestId;
+    public Object body;
 
-    public RoboReply(Object body) {
+    public RoboReply(Object body, String requestId) {
         this.body = body;
+        this.requestId = requestId;
     }
 }

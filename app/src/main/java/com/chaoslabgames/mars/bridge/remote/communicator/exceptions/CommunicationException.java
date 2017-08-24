@@ -1,4 +1,4 @@
-package com.chaoslabgames.mars.bridge.remote.communicator;
+package com.chaoslabgames.mars.bridge.remote.communicator.exceptions;
 
 /**
  * Created by drykovanov on 24.08.2017.

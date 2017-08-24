@@ -1,19 +1,17 @@
 package com.chaoslabgames.mars.bridge.remote;
 
-import com.chaoslabgames.mars.bridge.remote.communicator.CommunicationException;
+import com.chaoslabgames.mars.bridge.remote.communicator.exceptions.BadReplyIdException;
+import com.chaoslabgames.mars.bridge.remote.communicator.exceptions.CommunicationException;
 import com.chaoslabgames.mars.bridge.remote.communicator.Communicator;
 import com.chaoslabgames.mars.bridge.remote.communicator.RoboMessage;
 import com.chaoslabgames.mars.bridge.remote.communicator.RoboMessageSender;
 import com.chaoslabgames.mars.bridge.remote.communicator.RoboReply;
 import com.chaoslabgames.mars.bridge.remote.communicator.RoboReplyReader;
-import com.chaoslabgames.mars.bridge.remote.communicator.RoboReplyStatus;
-import com.chaoslabgames.mars.bridge.remote.communicator.UnexpectedReplyException;
+import com.chaoslabgames.mars.bridge.remote.communicator.exceptions.UnexpectedReplyException;
 
 import junit.framework.Assert;
 
 import org.junit.Test;
-
-import java.io.IOException;
 
 /**
  * Example local unit test, which will execute on the development machine (host).
@@ -39,7 +37,7 @@ public class CommunicatorUnitTest {
         Communicator comm = new Communicator(emptySender, new RoboReplyReader() {
             @Override
             public RoboReply readReply() {
-                return new RoboReply(expectedReply);
+                return new RoboReply(expectedReply, null);
             }
         });
 
@@ -62,5 +60,21 @@ public class CommunicatorUnitTest {
 
         //then throw
         comm.send(anyObject);
+    }
+
+    @Test(expected = BadReplyIdException.class)
+    public void handleReplyOnlyOnTargetMessage() throws CommunicationException {
+        //given
+        final String wrongMsgId = "non-msg8Id";
+        final RoboReplyReader reader = new RoboReplyReader() {
+            @Override
+            public RoboReply readReply() throws CommunicationException {
+                return new RoboReply(null, wrongMsgId);
+            }
+        };
+        final Communicator communicator = new Communicator(emptySender, reader);
+
+        //when throw
+        communicator.send(anyObject);
     }
 }
