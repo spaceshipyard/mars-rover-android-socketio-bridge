@@ -42,13 +42,14 @@ public class CommunicatorUnitTest {
         //given
 
         JSONObject message = new JSONObject("{}");
-        final Object expectedReply = "expected reply";
+        final JSONObject expectedReply = new JSONObject("{}");
         final String messageId = "msgId";
+        final String messageCmd = "cmdId";
 
         Communicator comm = new Communicator(newConstGenerator(messageId), emptySender, new RoboReplyReader() {
             @Override
             public RoboReply readReply() {
-                return new RoboReply(expectedReply, messageId);
+                return new RoboReply(expectedReply, messageId, messageCmd);
             }
         });
 
@@ -81,7 +82,7 @@ public class CommunicatorUnitTest {
         final RoboReplyReader reader = new RoboReplyReader() {
             @Override
             public RoboReply readReply() throws CommunicationException {
-                return new RoboReply(null, wrongMsgId);
+                return new RoboReply(new JSONObject(), wrongMsgId, "any");
             }
         };
         final Communicator communicator = new Communicator(newConstGenerator(correctMsgId), emptySender, reader);

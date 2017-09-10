@@ -34,10 +34,10 @@ public class Communicator {
             throw new CommunicationException(e);
         }
         final RoboReply reply = reader.readReply();
-        if (!requestId.equals(reply.requestId)) {
+        if (!requestId.equals(reply.replyOn)) {
             throw new BadReplyIdException();
         }
 
-        return reply.body;
+        return reply.params;
     }
 }
