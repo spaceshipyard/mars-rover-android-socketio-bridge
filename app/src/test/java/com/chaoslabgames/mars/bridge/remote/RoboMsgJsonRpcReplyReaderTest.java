@@ -3,6 +3,7 @@ package com.chaoslabgames.mars.bridge.remote;
 import com.chaoslabgames.mars.bridge.remote.communicator.RoboReply;
 import com.chaoslabgames.mars.bridge.remote.communicator.RoboReplyReader;
 import com.chaoslabgames.mars.bridge.remote.communicator.exceptions.CommunicationException;
+import com.chaoslabgames.mars.bridge.remote.communicator.impl.RoboMsgJsonRpcWriter;
 
 import junit.framework.Assert;
 
@@ -23,27 +24,6 @@ import java.io.InputStreamReader;
 
 
 public class RoboMsgJsonRpcReplyReaderTest {
-    public static String readUntilChar(InputStream stream, char target) {
-        StringBuilder sb = new StringBuilder();
-
-        try {
-            BufferedReader buffer = new BufferedReader(new InputStreamReader(stream));
-
-            int r;
-            while ((r = buffer.read()) != -1) {
-                char c = (char) r;
-
-                if (c == target)
-                    break;
-
-                sb.append(c);
-            }
-        } catch (IOException e) {
-            // Error handling
-        }
-
-        return sb.toString();
-    }
 
     @Test
     public void testReadCmdReply() throws CommunicationException, JSONException {
@@ -58,22 +38,7 @@ public class RoboMsgJsonRpcReplyReaderTest {
                         packageTerminator;
         final ByteArrayInputStream inputStream = new ByteArrayInputStream(inPackage.getBytes());
 
-        final RoboReplyReader reader = new RoboReplyReader() {
-            @Override
-            public RoboReply readReply() throws CommunicationException {
-                try {
-                    final String json = readUntilChar(inputStream, packageTerminator);
-                    final JSONObject replyJson = new JSONObject(json);
-                    final String cmd = replyJson.getString("cmd");
-                    final String replyOn = replyJson.getString("replyOn");
-                    final JSONObject params = replyJson.getJSONObject("params");
-
-                    return new RoboReply(params, replyOn, cmd);
-                } catch (JSONException e) {
-                    throw new CommunicationException(e);
-                }
-            }
-        };
+        final RoboReplyReader reader = new RoboMsgJsonRpcWriter(packageTerminator, inputStream);
         //when
         final RoboReply actualReply = reader.readReply();
 
