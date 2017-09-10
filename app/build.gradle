@@ -27,6 +27,8 @@ dependencies {
     compile 'com.android.support:appcompat-v7:25.3.1'
     compile 'com.android.support.constraint:constraint-layout:1.0.2'
     testCompile 'junit:junit:4.12'
+    // https://mvnrepository.com/artifact/org.json/json
+    testCompile group: 'org.json', name: 'json', version: '20170516'
 
     compile ('io.socket:socket.io-client:1.0.0') {
         // excluding org.json which is provided by Android

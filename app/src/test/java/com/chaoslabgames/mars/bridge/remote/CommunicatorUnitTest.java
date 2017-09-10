@@ -12,6 +12,7 @@ import com.chaoslabgames.mars.bridge.remote.communicator.exceptions.UnexpectedRe
 
 import junit.framework.Assert;
 
+import org.json.JSONObject;
 import org.junit.Test;
 
 /**
@@ -21,7 +22,7 @@ import org.junit.Test;
  */
 public class CommunicatorUnitTest {
 
-    final Object anyObject = new Object();
+    final JSONObject anyObject = new JSONObject();
     final RoboMessageSender emptySender = new RoboMessageSender() {
         @Override
         public void send(RoboMessage msg) {
@@ -40,7 +41,7 @@ public class CommunicatorUnitTest {
     public void messageSendTest() throws Exception {
         //given
 
-        Object message = "message ";
+        JSONObject message = new JSONObject("{}");
         final Object expectedReply = "expected reply";
         final String messageId = "msgId";
 
