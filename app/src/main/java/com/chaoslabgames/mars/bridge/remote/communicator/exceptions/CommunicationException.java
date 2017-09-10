@@ -10,7 +10,11 @@ public class CommunicationException extends Exception {
     public CommunicationException() {
     }
 
-    public CommunicationException(Throwable throwable) {
+    public CommunicationException(final String msg) {
+        super(msg);
+    }
+
+    public CommunicationException(final Throwable throwable) {
         super(throwable);
     }
 }

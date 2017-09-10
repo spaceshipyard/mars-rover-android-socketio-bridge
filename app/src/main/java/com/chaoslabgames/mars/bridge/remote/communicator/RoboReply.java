@@ -8,12 +8,14 @@ import org.json.JSONObject;
 
 public class RoboReply {
     public String replyOn;
+    public RoboReplyStatus replyStatus;
     public JSONObject params;
     public String cmd;
 
-    public RoboReply(final JSONObject params, final String replyOn, final String cmd) {
+    public RoboReply(final JSONObject params, final String replyOn,  final RoboReplyStatus replyStatus, final String cmd) {
         this.params = params;
         this.replyOn = replyOn;
+        this.replyStatus = replyStatus;
         this.cmd = cmd;
     }
 
@@ -24,27 +26,19 @@ public class RoboReply {
 
         RoboReply reply = (RoboReply) o;
 
-        if (replyOn != null ? !replyOn.equals(reply.replyOn) : reply.replyOn != null)
-            return false;
-        if (!params.toString().equals(reply.params.toString())) return false;
-        return cmd.equals(reply.cmd);
+        if (replyOn != null ? !replyOn.equals(reply.replyOn) : reply.replyOn != null) return false;
+        if (replyStatus != reply.replyStatus) return false;
+        if (params != null ? !params.toString().equals(reply.params.toString()) : reply.params != null) return false;
+        return cmd != null ? cmd.equals(reply.cmd) : reply.cmd == null;
 
     }
 
     @Override
     public int hashCode() {
         int result = replyOn != null ? replyOn.hashCode() : 0;
-        result = 31 * result + params.hashCode();
-        result = 31 * result + cmd.hashCode();
+        result = 31 * result + (replyStatus != null ? replyStatus.hashCode() : 0);
+        result = 31 * result + (params != null ? params.hashCode() : 0);
+        result = 31 * result + (cmd != null ? cmd.hashCode() : 0);
         return result;
-    }
-
-    @Override
-    public String toString() {
-        return "RoboReply{" +
-                "replyOn='" + replyOn + '\'' +
-                ", params=" + params +
-                ", cmd='" + cmd + '\'' +
-                '}';
     }
 }
