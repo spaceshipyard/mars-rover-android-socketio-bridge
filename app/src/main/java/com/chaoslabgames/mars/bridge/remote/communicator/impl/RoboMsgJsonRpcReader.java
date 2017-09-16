@@ -34,9 +34,9 @@ public class RoboMsgJsonRpcReader implements RoboReplyReader {
             final JSONObject replyJson = new JSONObject(json);
             final String cmd = replyJson.getString("cmd");
             final String replyOn = replyJson.getString("replyOn");
-            final int replyStatusRaw = replyJson.getInt("replyStatus");
+            final String replyStatusRaw = replyJson.getString("replyStatus");
             final JSONObject params = replyJson.getJSONObject("params");
-            final RoboReplyStatus status = RoboReplyStatus.fromInt(replyStatusRaw);
+            final RoboReplyStatus status = RoboReplyStatus.fromKey(replyStatusRaw);
             return new RoboReply(params, replyOn, status, cmd);
         } catch (JSONException e) {
             throw new CommunicationException(e);

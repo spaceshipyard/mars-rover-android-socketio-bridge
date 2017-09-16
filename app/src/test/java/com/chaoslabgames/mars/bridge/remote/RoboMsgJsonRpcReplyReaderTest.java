@@ -30,7 +30,7 @@ public class RoboMsgJsonRpcReplyReaderTest {
         final char packageTerminator = '\n';
         final String inPackage =
                 "{ \"cmd\": \"acknowledge\", \"params\": { \"sum\": 3 } ," +
-                        " \"replyOn\": \"reqId1\" , \"replyStatus\": 0, \"replyDelay\": 1 }" +
+                        " \"replyOn\": \"reqId1\" , \"replyStatus\": \"processed\", \"replyDelay\": 1 }" +
                         packageTerminator;
         final ByteArrayInputStream inputStream = new ByteArrayInputStream(inPackage.getBytes());
 

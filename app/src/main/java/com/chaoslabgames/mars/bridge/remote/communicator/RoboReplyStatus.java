@@ -16,11 +16,17 @@ public enum RoboReplyStatus {
         this.name = name;
     }
 
-    public static RoboReplyStatus fromInt(int id) {
-        switch (id) {
-            case 0: return OK;
-            case 1: return OK;
-            case 2: return OK;
+    public static RoboReplyStatus fromKey(String key) {
+        /**
+         #define COMMAND_RESULT_PROCESSED "processed"
+         #define COMMAND_RESULT_UNKNOWN_CMD "unknownCMD"
+         #define COMMAND_RESULT_NOT_JSON "notJson"
+         #define COMMAND_RESULT_UNKNOWN "unknown"
+         */
+        switch (key) {
+            case "processed": return OK;
+            case "unknownCMD": return UNKNOWN_CMD;
+            case "notJson": return NotJSON;
             default: return UNKNOWN_STATUS;
         }
     }
