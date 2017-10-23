@@ -81,27 +81,6 @@ public class ArduinoBridgeService extends Service {
         private void initiateConnections(String btMac, String dispatcherUrl, final String roomName) {
             Toast.makeText(getApplicationContext(), "Bluetooth Service Started", Toast.LENGTH_LONG).show();
 
-            BluetoothAdapter.getDefaultAdapter().enable();
-            BluetoothAdapter bluetooth = BluetoothAdapter.getDefaultAdapter();
-
-            try {
-                BluetoothDevice device = bluetooth.getRemoteDevice(btMac);
-
-                Method m = device.getClass().getMethod(
-                        "createRfcommSocket", new Class[]{int.class});
-
-                clientSocket = (BluetoothSocket) m.invoke(device, 1);
-                clientSocket.connect();
-                printMessageOnScreen("CONNECTED to BT " + btMac);
-                isBtAlive = true;
-            } catch (Exception e) {
-                Log.d("BLUETOOTH", e.getMessage());
-                printMessageOnScreen("BLUETOOTH connection error " + e + " " + btMac);
-                isBtAlive = false;
-            }
-            updateStatus();
-            //end BT
-
             try {
                 final Socket socket = IO.socket(dispatcherUrl);
 
@@ -162,7 +141,7 @@ public class ArduinoBridgeService extends Service {
                         Log.d("message", obj.toString());
                         try {
                             final String cmd = obj.get("cmd").toString();
-                            processCmd(cmd, obj.getJSONObject("parameters"));
+                            processCmd(cmd, obj.getJSONObject("params"));
                             printMessageOnScreen("in-cmd: " + cmd);
                         } catch (JSONException e) {
                             e.printStackTrace();
