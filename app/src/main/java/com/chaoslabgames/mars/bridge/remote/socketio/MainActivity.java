@@ -26,13 +26,11 @@ import io.socket.emitter.Emitter;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
-    BluetoothSocket clientSocket;
 
     //final String BT_MAC = "98:D3:31:FC:43:A1";
 //    final String DISPATCHER_URL = "http://micro-conf.xyz";
 
     EditText logText;
-    EditText editTextMacAddr;
     EditText editTextDispatcherUrl;
     EditText editTextRoomName;
     Button connectBtn;
@@ -45,7 +43,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         logText = (EditText) findViewById(R.id.logText);
         editTextRoomName = (EditText) findViewById(R.id.editTextRoomName);
-        editTextMacAddr = (EditText) findViewById(R.id.editTextMacAddr);
         editTextDispatcherUrl = (EditText) findViewById(R.id.editTextDispatcherUrl);
 
         connectBtn = (Button) findViewById(R.id.btnConnect);
@@ -62,114 +59,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         });
     }
 
-    private void forwardCmd(String cmd) {
-        try {
-            OutputStream outStream = clientSocket.getOutputStream();
-            outStream.write(cmd.getBytes());
-
-        } catch (IOException e) {
-            //Если есть ошибки, выводим их в лог
-            Log.d("BLUETOOTH", e.getMessage());
-            printMessageOnScreen("Error to send over BT cmd: " + cmd);
-        }
-
-    }
-
-    private void initiateConnections() {
-        //BT
-        String enableBT = BluetoothAdapter.ACTION_REQUEST_ENABLE;
-        startActivityForResult(new Intent(enableBT), 0);
-
-        BluetoothAdapter bluetooth = BluetoothAdapter.getDefaultAdapter();
-
-        final String btMac = editTextMacAddr.getText().toString();
-        final String dispatcherUrl = editTextDispatcherUrl.getText().toString();
-        try {
-            BluetoothDevice device = bluetooth.getRemoteDevice(btMac);
-
-            Method m = device.getClass().getMethod(
-                    "createRfcommSocket", new Class[]{int.class});
-
-            clientSocket = (BluetoothSocket) m.invoke(device, 1);
-            clientSocket.connect();
-            printMessageOnScreen("CONNECTED to BT " + btMac);
-        } catch (Exception e) {
-            Log.d("BLUETOOTH", e.getMessage());
-            printMessageOnScreen("BLUETOOTH connection error " + e + " " + btMac);
-        }
-
-        //end BT
-
-        try {
-            final Socket socket = IO.socket(dispatcherUrl);
-
-            socket.on(Socket.EVENT_CONNECT, new Emitter.Listener() {
-
-                @Override
-                public void call(Object... args) {
-                    printMessageOnScreen("socket io connected");
-                }
-
-            }).on("event", new Emitter.Listener() {
-
-                @Override
-                public void call(Object... args) {
-                    JSONObject obj = (JSONObject) args[0];
-                    Log.d("event", obj.toString());
-                    printMessageOnScreen("event " + obj.toString());
-                }
-
-            }).on("message", new Emitter.Listener() {
-
-                @Override
-                public void call(Object... args) {
-                    final JSONObject obj = (JSONObject) args[0];
-                    Log.d("message", obj.toString());
-                    try {
-                        final String cmd = obj.get("cmd").toString();
-                        forwardCmd(cmd);
-                        printMessageOnScreen("in-cmd: " + cmd);
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                        Log.d("socket", "fail to get cmd", e);
-                    }
-
-                }
-
-            }).on(Socket.EVENT_DISCONNECT, new Emitter.Listener() {
-
-                @Override
-                public void call(Object... args) {
-                    Log.d("disconnected", args.toString());
-                    printMessageOnScreen("socket is disconnected");
-                }
-
-            }).on(Socket.EVENT_CONNECT_ERROR, new Emitter.Listener() {
-
-                @Override
-                public void call(final Object... args) {
-                    Log.d("socket", "error " + args.toString());
-                    printMessageOnScreen("socket error " + args.toString());
-                }
-            });
-            socket.connect();
-
-        } catch (URISyntaxException e) {
-            e.printStackTrace();
-        }
-
-    }
-
     @Override
     public void onClick(View v) {
         Log.d("onClick", v.toString());
 
         if (v == connectBtn) {
             Intent intent = new Intent(this, ArduinoBridgeService.class);
-            final String btMac = editTextMacAddr.getText().toString();
             final String dispatcherUrl = editTextDispatcherUrl.getText().toString();
             final String roomName = editTextRoomName.getText().toString();
-            intent.putExtra("btMacAddress", btMac);
             intent.putExtra("dispatcherUrl", dispatcherUrl);
             intent.putExtra("roomName", roomName);
             startService(intent);

@@ -45,8 +45,6 @@ public class ArduinoBridgeService extends Service {
     // Handler that receives messages from the thread
     private final class ServiceHandler extends Handler {
 
-        BluetoothSocket clientSocket;
-        volatile boolean isBtAlive = false;
         volatile boolean isSocketAlive = false;
         volatile String currentRoom;
 
@@ -57,13 +55,12 @@ public class ArduinoBridgeService extends Service {
         @Override
         public void handleMessage(Message msg) {
 
-            final String btMac = msg.getData().getString("btMacAddress");
             final String dispatcherUrl = msg.getData().getString("dispatcherUrl");
             final String roomName = msg.getData().getString("roomName");
 
             startForeground(NOTIF_ID, buildStatusNotification());
 
-            initiateConnections(btMac, dispatcherUrl, roomName);
+            initiateConnections(dispatcherUrl, roomName);
             // Stop the service using the startId, so that we don't stop
             // the service in the middle of handling another job
             //stopSelf(msg.arg1);
@@ -74,11 +71,10 @@ public class ArduinoBridgeService extends Service {
                     .setSmallIcon(android.R.drawable.stat_notify_sync)
                     .setContentTitle("Service")
                     .setContentText(
-                            " bluetooth: " + isBtAlive +
                                     " dispatcher: " + isSocketAlive + " room: " + currentRoom).build();
         }
 
-        private void initiateConnections(String btMac, String dispatcherUrl, final String roomName) {
+        private void initiateConnections(String dispatcherUrl, final String roomName) {
             Toast.makeText(getApplicationContext(), "Bluetooth Service Started", Toast.LENGTH_LONG).show();
 
             try {
@@ -209,18 +205,7 @@ public class ArduinoBridgeService extends Service {
         }
 
         private void forwardToBT(String cmd) {
-            try {
-                OutputStream outStream = clientSocket.getOutputStream();
-                outStream.write(cmd.getBytes());
 
-            } catch (IOException e) {
-                //Если есть ошибки, выводим их в лог
-                isBtAlive = false;
-                updateStatus();
-                e.printStackTrace();
-                Log.d("BLUETOOTH", e.getMessage());
-                printMessageOnScreen("Error to send over BT cmd: " + cmd);
-            }
         }
 
         void printMessageOnScreen(String text) {
