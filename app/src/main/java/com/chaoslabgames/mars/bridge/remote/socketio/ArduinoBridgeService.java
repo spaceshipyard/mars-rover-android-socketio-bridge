@@ -3,9 +3,6 @@ package com.chaoslabgames.mars.bridge.remote.socketio;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.Service;
-import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothSocket;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
@@ -22,14 +19,19 @@ import android.widget.Toast;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.lang.reflect.Method;
 import java.net.URISyntaxException;
+
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
 
 import io.socket.client.IO;
 import io.socket.client.Socket;
 import io.socket.emitter.Emitter;
+import okhttp3.OkHttpClient;
 
 /**
  * Created by drykovanov on 29.07.2017.
@@ -74,10 +76,57 @@ public class ArduinoBridgeService extends Service {
                                     " dispatcher: " + isSocketAlive + " room: " + currentRoom).build();
         }
 
+        private OkHttpClient getUnsafeOkHttpClient() throws Exception {
+            try {
+                // Create a trust manager that does not validate certificate chains
+                final TrustManager[] trustAllCerts = new TrustManager[] {
+                        new X509TrustManager() {
+                            @Override
+                            public void checkClientTrusted(java.security.cert.X509Certificate[] chain, String authType) {
+                            }
+
+                            @Override
+                            public void checkServerTrusted(java.security.cert.X509Certificate[] chain, String authType) {
+                            }
+
+                            @Override
+                            public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+                                return new java.security.cert.X509Certificate[]{};
+                            }
+                        }
+                };
+
+                // Install the all-trusting trust manager
+                final SSLContext sslContext = SSLContext.getInstance("SSL");
+                sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
+                // Create an ssl socket factory with our all-trusting manager
+                final SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
+
+                OkHttpClient.Builder builder = new OkHttpClient.Builder();
+                builder.sslSocketFactory(sslSocketFactory, (X509TrustManager)trustAllCerts[0]);
+                builder.hostnameVerifier(new HostnameVerifier() {
+                    @Override
+                    public boolean verify(String hostname, SSLSession session) {
+                        return true;
+                    }
+                });
+
+                OkHttpClient okHttpClient = builder.build();
+                return okHttpClient;
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+
         private void initiateConnections(String dispatcherUrl, final String roomName) {
             Toast.makeText(getApplicationContext(), "Bluetooth Service Started", Toast.LENGTH_LONG).show();
 
             try {
+                OkHttpClient okHttpClient = getUnsafeOkHttpClient();
+// default settings for all sockets
+                IO.setDefaultOkHttpWebSocketFactory(okHttpClient);
+                IO.setDefaultOkHttpCallFactory(okHttpClient);
+
                 final Socket socket = IO.socket(dispatcherUrl);
 
                 socket.on(Socket.EVENT_CONNECT, new Emitter.Listener() {
@@ -169,6 +218,8 @@ public class ArduinoBridgeService extends Service {
                 socket.connect();
 
             } catch (URISyntaxException e) {
+                e.printStackTrace();
+            } catch (Exception e) {
                 e.printStackTrace();
             }
 
